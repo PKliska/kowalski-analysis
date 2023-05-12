@@ -37,6 +37,9 @@ async def constructCSV(sampleId: int, low: int, high: int, jsonProject: models.J
         values = []
         for collection in test_point_collections:
             if collection.InputConditionId == input_condition_id:
-                values.extend(collection.TestPoints)
+                values.extend([i.Value for i in collection.TestPoints])
         possible_values.append(values)
-    return [get_kth_element(possible_values, k) for k in range(low, high)]
+    rows = [get_kth_element(possible_values, k) for k in range(low, high)]
+
+    df = pd.DataFrame(rows, columns=table_header)
+    return df.to_csv(index=False)
