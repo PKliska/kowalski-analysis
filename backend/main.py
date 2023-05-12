@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 import itertools
 import pandas as pd
 
@@ -8,8 +8,18 @@ app = FastAPI()
 
 projects = { }
 
-@app.post("/{sampleId}/construct-csv")
-async def constructCSV(sampleId: int, jsonProject: models.JSONProjectModel):
+def get_kth_element(possible_values, k):
+    if len(possible_values) == 1:
+        return [possible_values[0][k]]
+    step = 1
+    for i in possible_values[1:]:
+        step *= len(i)
+    n = k // step
+    return [possible_values[0][n]] + get_kth_element(possible_values[1:], k % step)
+
+
+@app.post("/{sampleId}/{low}/{high}/construct-csv")
+async def constructCSV(sampleId: int, low: int, high: int, jsonProject: models.JSONProjectModel):
     test_point_collections = [collection
                               for collection in jsonProject.TestPointCollections
                               if sampleId in collection.SampleIds]
@@ -29,6 +39,4 @@ async def constructCSV(sampleId: int, jsonProject: models.JSONProjectModel):
             if collection.InputConditionId == input_condition_id:
                 values.extend(collection.TestPoints)
         possible_values.append(values)
-    
-    return [len(i) for i in possible_values]
-
+    return [get_kth_element(possible_values, k) for k in range(low, high)]
