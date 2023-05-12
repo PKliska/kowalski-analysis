@@ -4,6 +4,8 @@ import { sentenceCase } from 'change-case';
 import { useState } from 'react';
 // @mui
 import {
+  Input,
+  Box,
   Card,
   Table,
   Stack,
@@ -21,6 +23,8 @@ import {
   IconButton,
   TableContainer,
   TablePagination,
+  TableHead,
+  Modal,
 } from '@mui/material';
 // components
 import Label from '../components/label';
@@ -29,16 +33,15 @@ import Scrollbar from '../components/scrollbar';
 // sections
 import { UserListHead, UserListToolbar } from '../sections/@dashboard/user';
 // mock
-import USERLIST from '../_mock/user';
+// import USERLIST from '../_mock/user';
 
 // ----------------------------------------------------------------------
 
 const TABLE_HEAD = [
+  { id: 'id', label: 'Id', alignRight: false },
   { id: 'name', label: 'Name', alignRight: false },
-  { id: 'company', label: 'Company', alignRight: false },
-  { id: 'role', label: 'Role', alignRight: false },
-  { id: 'isVerified', label: 'Verified', alignRight: false },
-  { id: 'status', label: 'Status', alignRight: false },
+  { id: 'createdat', label: 'Created At', alignRight: false },
+  { id: 'opencsv', label: 'Open CSV', alignRight: false },
   { id: '' },
 ];
 
@@ -75,18 +78,21 @@ function applySortFilter(array, comparator, query) {
 
 export default function UserPage() {
   const [open, setOpen] = useState(null);
-
   const [page, setPage] = useState(0);
-
   const [order, setOrder] = useState('asc');
-
   const [selected, setSelected] = useState([]);
-
   const [orderBy, setOrderBy] = useState('name');
-
   const [filterName, setFilterName] = useState('');
-
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowTemp, setRowTemp] = useState([]);
+
+  const [shown, setShown] = useState([0, 1000]);
+
+  let jsons = localStorage.getItem('json');
+
+  if (jsons === null) {
+    jsons = [];
+  } else jsons = JSON.parse(jsons);
 
   const handleOpenMenu = (event) => {
     setOpen(event.currentTarget);
@@ -104,7 +110,7 @@ export default function UserPage() {
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelecteds = USERLIST.map((n) => n.name);
+      const newSelecteds = jsons.map((n) => n.name);
       setSelected(newSelecteds);
       return;
     }
@@ -140,11 +146,13 @@ export default function UserPage() {
     setFilterName(event.target.value);
   };
 
-  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - USERLIST.length) : 0;
+  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - jsons.length) : 0;
 
-  const filteredUsers = applySortFilter(USERLIST, getComparator(order, orderBy), filterName);
-
+  const filteredUsers = applySortFilter(jsons, getComparator(order, orderBy), filterName);
   const isNotFound = !filteredUsers.length && !!filterName;
+
+  const [modalOpened, setModalOpened] = useState(false);
+  const [modalData, setModalData] = useState([[], []]);
 
   return (
     <>
@@ -157,8 +165,34 @@ export default function UserPage() {
           <Typography variant="h4" gutterBottom>
             User
           </Typography>
+          {/* from to inputs */}
+
+          <Input
+            id="outlined-basic"
+            label="From"
+            variant="outlined"
+            type="number"
+            sx={{ width: 100 }}
+            onChange={(e) => {
+              setShown([e.target.value, shown[1]]);
+            }}
+            value={shown[0]}
+          />
+
+          <Input
+            id="outlined-basic"
+            label="To"
+            variant="outlined"
+            type="number"
+            sx={{ width: 100 }}
+            onChange={(e) => {
+              setShown([shown[0], e.target.value]);
+            }}
+            value={shown[1]}
+          />
+
           <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />}>
-            New User
+            Export Selected
           </Button>
         </Stack>
 
@@ -172,14 +206,19 @@ export default function UserPage() {
                   order={order}
                   orderBy={orderBy}
                   headLabel={TABLE_HEAD}
-                  rowCount={USERLIST.length}
+                  rowCount={jsons.length}
                   numSelected={selected.length}
                   onRequestSort={handleRequestSort}
                   onSelectAllClick={handleSelectAllClick}
                 />
                 <TableBody>
                   {filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
-                    const { id, name, role, status, company, avatarUrl, isVerified } = row;
+                    console.log(row);
+
+                    const id = row.Project.Id;
+                    const name = row.Project.Name;
+                    const createdAt = row.Project.CreatedAt;
+
                     const selectedUser = selected.indexOf(name) !== -1;
 
                     return (
@@ -187,24 +226,64 @@ export default function UserPage() {
                         <TableCell padding="checkbox">
                           <Checkbox checked={selectedUser} onChange={(event) => handleClick(event, name)} />
                         </TableCell>
+                        <TableCell component="th" scope="row" padding="none">
+                          <Stack direction="row" alignItems="center" spacing={2}>
+                            {/* <Avatar alt={name} src={avatarUrl} /> */}
+                            <Typography variant="subtitle2" noWrap>
+                              {id}
+                            </Typography>
+                          </Stack>
+                        </TableCell>
 
                         <TableCell component="th" scope="row" padding="none">
                           <Stack direction="row" alignItems="center" spacing={2}>
-                            <Avatar alt={name} src={avatarUrl} />
+                            {/* <Avatar alt={name} src={avatarUrl} /> */}
                             <Typography variant="subtitle2" noWrap>
                               {name}
                             </Typography>
                           </Stack>
                         </TableCell>
 
-                        <TableCell align="left">{company}</TableCell>
+                        <TableCell component="th" scope="row" padding="none">
+                          <Stack direction="row" alignItems="center" spacing={2}>
+                            {/* <Avatar alt={name} src={avatarUrl} /> */}
+                            <Typography variant="subtitle2" noWrap>
+                              {createdAt}
+                            </Typography>
+                          </Stack>
+                        </TableCell>
 
-                        <TableCell align="left">{role}</TableCell>
+                        <TableCell component="th" scope="row" padding="none">
+                          <Stack direction="row" alignItems="center" spacing={2}>
+                            {/* <Avatar alt={name} src={avatarUrl} /> */}
+                            <Button
+                              variant="contained"
+                              startIcon={<Iconify icon="eva:plus-fill" />}
+                              onClick={async () => {
+                                // console.log(row);
 
-                        <TableCell align="left">{isVerified ? 'Yes' : 'No'}</TableCell>
+                                const res = await fetch(`http://localhost:3001/${id}/${0}/${1000}/construct-csv`, {
+                                  method: 'POST', // *GET, POST, PUT, DELETE, etc.
+                                  mode: 'cors', // no-cors, *cors, same-origin
+                                  cache: 'no-cache',
+                                  body: JSON.stringify(row),
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                  },
+                                });
 
-                        <TableCell align="left">
-                          <Label color={(status === 'banned' && 'error') || 'success'}>{sentenceCase(status)}</Label>
+                                setRowTemp(row);
+                                const data = await res.json();
+
+                                // console.log(data);
+
+                                setModalData(data);
+                                setModalOpened(true);
+                              }}
+                            >
+                              Open CSV
+                            </Button>
+                          </Stack>
                         </TableCell>
 
                         <TableCell align="right">
@@ -252,7 +331,7 @@ export default function UserPage() {
           <TablePagination
             rowsPerPageOptions={[5, 10, 25]}
             component="div"
-            count={USERLIST.length}
+            count={jsons.length}
             rowsPerPage={rowsPerPage}
             page={page}
             onPageChange={handleChangePage}
@@ -284,11 +363,148 @@ export default function UserPage() {
           Edit
         </MenuItem>
 
+        <MenuItem sx={{ color: 'text.secondary' }}>
+          <Iconify icon={'eva:copy-fill'} sx={{ mr: 2 }} />
+          Export
+        </MenuItem>
+
         <MenuItem sx={{ color: 'error.main' }}>
           <Iconify icon={'eva:trash-2-outline'} sx={{ mr: 2 }} />
           Delete
         </MenuItem>
       </Popover>
+
+      <Modal
+        open={modalOpened}
+        onClose={() => setModalOpened(false)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: '10px',
+        }}
+      >
+        <Box sx={{ width: '80%', height: '80%', bgcolor: 'background.paper', borderRadius: '10px' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 2 }}>
+            <Button
+              variant="contained"
+              startIcon={<Iconify icon="eva:download-fill" />}
+              onClick={() => {
+                let s = '';
+
+                for (let i = 0; i < modalData[0].length; i += 1) {
+                  s += `${modalData[0][i]},`;
+                }
+                s = s.slice(0, -1);
+
+                s += '\r\n';
+
+                for (let i = 1; i < modalData[1].length; i += 1) {
+                  for (let j = 0; j < modalData[1][i].length; j += 1) {
+                    s += `${modalData[1][i][j]},`;
+                  }
+                  s = s.slice(0, -1);
+                  s += '\r\n';
+                }
+
+                const blob = new Blob([s], { type: 'text/csv;charset=utf-8;' });
+
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', 'data.csv');
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }}
+            >
+              {/* export */}
+              {/* <Iconify icon={'eva:download-fill'} /> */}
+              Download CSV
+            </Button>
+
+            <IconButton onClick={() => setModalOpened(false)}>
+              <Iconify icon={'eva:close-fill'} />
+            </IconButton>
+
+            <IconButton>
+              <Iconify icon={'eva:arrow-ios-forward-fill'} />
+            </IconButton>
+          </Box>
+
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+            {/* table header {JSON.stringify(modalData[0])} */}
+
+            <Scrollbar>
+              <div
+                style={{ overflow: 'auto', maxHeight: '60vh' }}
+                onScroll={async (e) => {
+                  // paginate
+
+                  const element = e.target;
+
+                  console.log(element.scrollHeight - element.scrollTop, element.clientHeight);
+
+                  if (element.scrollHeight - element.scrollTop === element.clientHeight) {
+                    const res = await fetch(`http://localhost:3001/${0}/${shown[0]}/${shown[1]}/construct-csv`, {
+                      method: 'POST', // *GET, POST, PUT, DELETE, etc.
+                      mode: 'cors', // no-cors, *cors, same-origin
+                      cache: 'no-cache',
+                      body: JSON.stringify(rowTemp),
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                    });
+                    const data2 = await res.json();
+
+                    // console.log(data);
+
+                    setModalData([data2[0], data2[1].concat(modalData[1])]);
+                    setModalOpened(true);
+                  }
+                }}
+              >
+                <TableContainer component={Paper}>
+                  <Table sx={{ minWidth: 650 }} aria-label="simple table">
+                    <TableHead>
+                      <TableRow>
+                        {Object.keys(modalData[0]).map((key) => (
+                          <TableCell
+                            style={{
+                              width: '200px',
+                            }}
+                          >
+                            {modalData[0][key]}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    </TableHead>
+
+                    <TableBody>
+                      {modalData[1].map((row) => (
+                        <TableRow key={row.name}>
+                          {Object.keys(row).map((key) => (
+                            <TableCell
+                              style={{
+                                width: '200px',
+                              }}
+                              component="th"
+                              scope="row"
+                            >
+                              {row[key]}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </div>
+            </Scrollbar>
+          </Box>
+        </Box>
+      </Modal>
     </>
   );
 }
