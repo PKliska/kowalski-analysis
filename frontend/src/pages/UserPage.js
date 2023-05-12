@@ -4,6 +4,7 @@ import { sentenceCase } from 'change-case';
 import { useState } from 'react';
 // @mui
 import {
+  Input,
   Box,
   Card,
   Table,
@@ -83,6 +84,9 @@ export default function UserPage() {
   const [orderBy, setOrderBy] = useState('name');
   const [filterName, setFilterName] = useState('');
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowTemp, setRowTemp] = useState([]);
+
+  const [shown, setShown] = useState([0, 1000]);
 
   let jsons = localStorage.getItem('json');
 
@@ -161,6 +165,32 @@ export default function UserPage() {
           <Typography variant="h4" gutterBottom>
             User
           </Typography>
+          {/* from to inputs */}
+
+          <Input
+            id="outlined-basic"
+            label="From"
+            variant="outlined"
+            type="number"
+            sx={{ width: 100 }}
+            onChange={(e) => {
+              setShown([e.target.value, shown[1]]);
+            }}
+            value={shown[0]}
+          />
+
+          <Input
+            id="outlined-basic"
+            label="To"
+            variant="outlined"
+            type="number"
+            sx={{ width: 100 }}
+            onChange={(e) => {
+              setShown([shown[0], e.target.value]);
+            }}
+            value={shown[1]}
+          />
+
           <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />}>
             Export Selected
           </Button>
@@ -232,7 +262,7 @@ export default function UserPage() {
                               onClick={async () => {
                                 // console.log(row);
 
-                                const res = await fetch(`http://localhost:3001/${id}/${0}/${100}/construct-csv`, {
+                                const res = await fetch(`http://localhost:3001/${id}/${0}/${1000}/construct-csv`, {
                                   method: 'POST', // *GET, POST, PUT, DELETE, etc.
                                   mode: 'cors', // no-cors, *cors, same-origin
                                   cache: 'no-cache',
@@ -241,6 +271,8 @@ export default function UserPage() {
                                     'Content-Type': 'application/json',
                                   },
                                 });
+
+                                setRowTemp(row);
                                 const data = await res.json();
 
                                 // console.log(data);
@@ -405,7 +437,34 @@ export default function UserPage() {
             {/* table header {JSON.stringify(modalData[0])} */}
 
             <Scrollbar>
-              <Paper style={{ overflow: 'auto', maxHeight: '60vh' }}>
+              <div
+                style={{ overflow: 'auto', maxHeight: '60vh' }}
+                onScroll={async (e) => {
+                  // paginate
+
+                  const element = e.target;
+
+                  console.log(element.scrollHeight - element.scrollTop, element.clientHeight);
+
+                  if (element.scrollHeight - element.scrollTop === element.clientHeight) {
+                    const res = await fetch(`http://localhost:3001/${0}/${shown[0]}/${shown[1]}/construct-csv`, {
+                      method: 'POST', // *GET, POST, PUT, DELETE, etc.
+                      mode: 'cors', // no-cors, *cors, same-origin
+                      cache: 'no-cache',
+                      body: JSON.stringify(rowTemp),
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                    });
+                    const data2 = await res.json();
+
+                    // console.log(data);
+
+                    setModalData([data2[0], data2[1].concat(modalData[1])]);
+                    setModalOpened(true);
+                  }
+                }}
+              >
                 <TableContainer component={Paper}>
                   <Table sx={{ minWidth: 650 }} aria-label="simple table">
                     <TableHead>
@@ -441,7 +500,7 @@ export default function UserPage() {
                     </TableBody>
                   </Table>
                 </TableContainer>
-              </Paper>
+              </div>
             </Scrollbar>
           </Box>
         </Box>

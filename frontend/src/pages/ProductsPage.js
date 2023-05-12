@@ -126,6 +126,8 @@ export default function ProductsPage() {
   const [inputConditions, setInputConditions] = useState([]);
   const [testPointCollections, setTestPointCollections] = useState([]);
 
+  const [shownSamples, setShownSamples] = useState([0, 1000]);
+
   const onDrop = useCallback((acceptedFiles) => {
     // read file to object, check that its a json
 
