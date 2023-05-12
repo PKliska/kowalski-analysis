@@ -62,6 +62,16 @@ const TABLE_HEAD3 = [
 ];
 // ----------------------------------------------------------------------
 
+// const analyze = async (sampleId, project, pocetak, kraj) => {
+//   const API_URI = 'http://localhost:9999/analyze';
+//   const res = await axios.get(API_URI, {
+//     responseType: 'blob',
+//     params: { sampleId: sampleId, low: pocetak, high: kraj },
+//     data: project,
+//   });
+//   return res.data.text();
+// };
+
 function descendingComparator(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) {
     return -1;
@@ -220,9 +230,6 @@ export default function ProductsPage() {
           <Typography variant="h4" gutterBottom>
             {name}
           </Typography>
-          <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />}>
-            New User
-          </Button>
         </Stack>
 
         <div
@@ -306,9 +313,54 @@ export default function ProductsPage() {
 
                           <TableCell component="th" scope="row" padding="none">
                             <Stack direction="row" alignItems="center" spacing={2}>
-                              <Typography variant="subtitle2" noWrap>
-                                {Id}
-                              </Typography>
+                              <Button
+                                onClick={() => {
+                                  if (
+                                    !(
+                                      samples.length > 0 &&
+                                      inputConditions.length > 0 &&
+                                      testPointCollections.length > 0
+                                    )
+                                  ) {
+                                    alert('Please upload a JSON file');
+                                    return;
+                                  }
+
+                                  const data = {
+                                    Project: {
+                                      Name: name,
+                                      Samples: samples,
+                                      InputConditions: inputConditions,
+                                      Id: 1,
+                                      ToSynthetise: Id,
+                                      CreatedAt: new Date(),
+                                    },
+                                    TestPointCollections: testPointCollections,
+                                  };
+
+                                  // const json = JSON.stringify(data);
+
+                                  let jsonOld = localStorage.getItem('json');
+
+                                  if (jsonOld) {
+                                    jsonOld = JSON.parse(jsonOld);
+                                    jsonOld.push(data);
+                                    localStorage.setItem('json', JSON.stringify(jsonOld));
+                                  }
+
+                                  if (!jsonOld) {
+                                    localStorage.setItem('json', JSON.stringify([data]));
+                                  }
+
+                                  alert('Synthetised, go to Optimize Vector to optimize the vector');
+                                }}
+                                variant="contained"
+                                startIcon={<Iconify icon="eva:plus-fill" />}
+                              >
+                                <Typography variant="subtitle2" noWrap>
+                                  Synthesise {Id}
+                                </Typography>
+                              </Button>
                             </Stack>
                           </TableCell>
 
@@ -406,11 +458,9 @@ export default function ProductsPage() {
                           </TableCell>
 
                           <TableCell component="th" scope="row" padding="none">
-                            <Stack direction="row" alignItems="center" spacing={2}>
-                              <Typography variant="subtitle2" noWrap>
-                                {Id}
-                              </Typography>
-                            </Stack>
+                            <Typography variant="subtitle2" noWrap>
+                              {Id}
+                            </Typography>
                           </TableCell>
 
                           <TableCell align="left">{Parameter}</TableCell>
