@@ -16,11 +16,11 @@ const navConfig = [
     path: '/dashboard/user',
     icon: icon('ic_user'),
   },
-  // {
-  //   title: 'product',
-  //   path: '/dashboard/products',
-  //   icon: icon('ic_cart'),
-  // },
+  {
+    title: 'create vector entry',
+    path: '/dashboard/products',
+    icon: icon('ic_cart'),
+  },
   {
     title: 'about the app',
     path: '/dashboard/blog',
