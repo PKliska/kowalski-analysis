@@ -3,8 +3,22 @@ import itertools
 import pandas as pd
 
 import models
+from fastapi.middleware.cors import CORSMiddleware
+
 
 app = FastAPI()
+
+origins = [
+    "*",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 def get_kth_element(possible_values, k):
     if len(possible_values) == 1:
@@ -44,4 +58,8 @@ async def constructCSV(sampleId: int, low: int, high: int, jsonProject: models.J
     rows = [get_kth_element(possible_values, k) for k in range(max(low, 0), min(high, row_count))]
 
     df = pd.DataFrame(rows, columns=table_header)
-    return df.to_csv(index=False)
+    return [table_header, rows]
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=3001)
