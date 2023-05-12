@@ -45,7 +45,3 @@ async def constructCSV(sampleId: int, low: int, high: int, jsonProject: models.J
 
     df = pd.DataFrame(rows, columns=table_header)
     return df.to_csv(index=False)
-
-@app.get("/{sampleId}/row-number")
-async def getRowNumber(sampleId: int):
-    return 
