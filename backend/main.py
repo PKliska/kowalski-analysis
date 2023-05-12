@@ -6,8 +6,6 @@ import models
 
 app = FastAPI()
 
-projects = { }
-
 def get_kth_element(possible_values, k):
     if len(possible_values) == 1:
         return [possible_values[0][k]]
@@ -16,7 +14,6 @@ def get_kth_element(possible_values, k):
         step *= len(i)
     n = k // step
     return [possible_values[0][n]] + get_kth_element(possible_values[1:], k % step)
-
 
 @app.post("/{sampleId}/{low}/{high}/construct-csv")
 async def constructCSV(sampleId: int, low: int, high: int, jsonProject: models.JSONProjectModel):
@@ -39,7 +36,16 @@ async def constructCSV(sampleId: int, low: int, high: int, jsonProject: models.J
             if collection.InputConditionId == input_condition_id:
                 values.extend([i.Value for i in collection.TestPoints])
         possible_values.append(values)
-    rows = [get_kth_element(possible_values, k) for k in range(low, high)]
+
+    row_count = 1
+    for i in possible_values:
+        row_count *= len(i)
+    
+    rows = [get_kth_element(possible_values, k) for k in range(max(low, 0), min(high, row_count))]
 
     df = pd.DataFrame(rows, columns=table_header)
     return df.to_csv(index=False)
+
+@app.get("/{sampleId}/row-number")
+async def getRowNumber(sampleId: int):
+    return 
